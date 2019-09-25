@@ -1,0 +1,77 @@
+
+#!/bin/bash
+
+#I use this to create a little bash script that will backup the database at regular intervals move the dump_file to S3_bucket.
+
+#create a few variables to contain the Database_credentials.
+
+# Database credentials
+
+
+USER="root"
+
+# PASSWORD="PASSWORD"
+
+#HOST="hostname"
+
+DB1="database_name1"
+
+DB2="database_name2"
+
+#Backup_Directory_Locations
+
+BACKUPROOT1="/backup/mysql_dump1"
+
+BACKUPROOT2="/backup/mysql_dump2"
+
+TSTAMP=$(TZ=IST-5:30 date +"-%d-%b-%Y-%H-%M")
+
+S3BUCKET1="s3://s3bucket/folder1/"
+
+S3BUCKET2="s3://s3bucket/folder2/"
+
+#logging
+LOG_ROOT="/backup/dump.logs"
+
+#Dump of Mysql Database into S3
+#convert UTC time to IST send to Logs
+#
+echo "####### $(TZ=IST-5:30 date +"-%d-%b-%Y-%H-%M")#####" >> "$LOG_ROOT"
+
+###########DB1########
+
+echo "$(tput setaf 2)creating backup of $DB1 start at $TSTAMP" >> "$LOG_ROOT"
+
+mysqldump -h localhost -u root --databases $DB1  -p"PASSWORD"> $BACKUPROOT1/$DB1$TSTAMP.sql
+
+
+echo "$(tput setaf 2)creating backup of $DB2 start at $TSTAMP" >> "$LOG_ROOT"
+
+mysqldump -h localhost -u root --databases $DB2  -p"PASSWORD"> $BACKUPROOT2/$DB2$TSTAMP.sql
+
+echo "$(tput setaf 3)compresseing backup of $DB1 start at $TSTAMP" >> "$LOG_ROOT"
+
+tar -cvzf $BACKUPROOT1/$DB1$TSTAMP.tar.gz $BACKUPROOT1/$DB1*.sql
+
+echo "$(tput setaf 3)compresseing backup of $DB2 start at $TSTAMP" >> "$LOG_ROOT"
+
+tar -cvzf $BACKUPROOT2/$DB2$TSTAMP.tar.gz $BACKUPROOT2/$DB2*.sql
+
+
+echo "Deleting local dumpfiles"
+/bin/rm -f   $BACKUPROOT1/*.sql
+
+/bin/rm -f   $BACKUPROOT2/*.sql
+
+echo "$(tput setaf 4)Moved the backup file from local to S3 bucket at $TSTAMP" >> "$LOG_ROOT"
+
+aws s3 mv   --recursive   $BACKUPROOT1 $S3BUCKET1
+
+
+echo "$(tput setaf 4)Moved the backup file from local to S3 bucket at $TSTAMP" >> "$LOG_ROOT"
+
+aws s3 mv   --recursive   $BACKUPROOT2 $S3BUCKET2
+
+#echo "$(tput setaf 2)Moved the backup file from local to S3 bucket at $TSTAMP" >> "$LOG_ROOT"
+
+echo "$(tput setaf 5)Coll!! Script have been executed successfully at $TSTAMP" >> "$LOG_ROOT"
