@@ -1,0 +1,16 @@
+
+#!bin/bash
+###Author by Ganesh Rasala###
+##AIM##-My Idea is to delete old files automatically.####
+ONE=15
+TODAY=`date -d "$dataset_date - $ONE days" +%d-%b-%G`
+DB1=iareacin_iare
+DB2=iareacin_results
+LOG_ROOT="/backup/dump.logs"
+echo "Deleting 10 Days old files from s3 --$TODAY---" > $LOG_ROOT
+aws s3 rm s3://iare-dbbackup/$DB1/$DB1-$TODAY-05:00.tar.gz
+aws s3 rm s3://iare-dbbackup/$DB2/$DB2-$TODAY-05:00.tar.gz
+#END
+
+##Cron every day midnight###
+###0 0 * * * sh /backup/oldfile-dels3.sh > /dev/null 2>&1
